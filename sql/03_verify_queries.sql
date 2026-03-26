@@ -1,0 +1,47 @@
+-- ============================================================================
+-- 03_verify_queries.sql
+-- TB_CUSTOMER 데이터 검증 쿼리
+-- ============================================================================
+
+-- 전체 건수
+SELECT COUNT(*) AS TOTAL_CNT FROM ETL_SCHEMA.TB_CUSTOMER WITH UR;
+-- 결과: 20
+
+-- 상태별 건수
+SELECT STATUS, COUNT(*) AS CNT
+FROM ETL_SCHEMA.TB_CUSTOMER
+GROUP BY STATUS
+WITH UR;
+-- 결과: A=16, I=2, D=1
+
+-- 고객유형별 건수
+SELECT CUSTOMER_TYPE,
+       CASE CUSTOMER_TYPE WHEN 'P' THEN '개인' WHEN 'B' THEN '기업' END AS TYPE_NM,
+       COUNT(*) AS CNT
+FROM ETL_SCHEMA.TB_CUSTOMER
+GROUP BY CUSTOMER_TYPE
+WITH UR;
+-- 결과: P(개인)=16, B(기업)=4
+
+-- NULL 포함 컬럼 확인 (Parquet 변환 시 NULL 처리 검증용)
+SELECT CUSTOMER_CD, CUSTOMER_NAME,
+       BIRTH_DATE, GENDER, EMAIL, ADDRESS_DETAIL, LAST_LOGIN_DT, REMARK
+FROM ETL_SCHEMA.TB_CUSTOMER
+WHERE EMAIL IS NULL
+   OR ADDRESS_DETAIL IS NULL
+   OR LAST_LOGIN_DT IS NULL
+WITH UR;
+
+-- 최근 수정 데이터 (증분수집 테스트용: 최근 3일)
+SELECT CUSTOMER_CD, CUSTOMER_NAME, UPD_DT
+FROM ETL_SCHEMA.TB_CUSTOMER
+WHERE UPD_DT >= CURRENT TIMESTAMP - 3 DAYS
+ORDER BY UPD_DT DESC
+WITH UR;
+
+-- UPD_DT 날짜별 분포 (증분수집 건수 예측용)
+SELECT DATE(UPD_DT) AS UPD_DATE, COUNT(*) AS CNT
+FROM ETL_SCHEMA.TB_CUSTOMER
+GROUP BY DATE(UPD_DT)
+ORDER BY UPD_DATE DESC
+WITH UR;
