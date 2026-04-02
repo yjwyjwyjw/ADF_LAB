@@ -1,0 +1,188 @@
+{
+    "name": "pipeline3",
+    "properties": {
+        "activities": [
+            {
+                "name": "Copy_DB2_to_ADLS",
+                "type": "Copy",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "Db2Source",
+                        "query": {
+                            "value": "@concat('select * from '  ,pipeline().parameters.p_schema_name,'.',pipeline().parameters.p_table_name, ' fetch frist 1 rows only with ur')",
+                            "type": "Expression"
+                        }
+                    },
+                    "sink": {
+                        "type": "ParquetSink",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "ParquetWriteSettings"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "DSET_SRC_META_TABLE",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "DSET_TGT_INGEST",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "P_FOLDER_1": {
+                                "value": "@pipeline().parameters.p_container",
+                                "type": "Expression"
+                            },
+                            "P_FOLDER_2": {
+                                "value": "@concat(pipeline().parameters.P_db_name,'/',pipeline().parameters.p_schema_name)",
+                                "type": "Expression"
+                            },
+                            "P_FILE_NAME": {
+                                "value": "@concat(pipeline().parameters.p_table_name, '_', pipeline().parameters.p_load_date, '.parquet')",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "Exec_Log_Success",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Copy_DB2_to_ADLS",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Log_To_Blob",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "p_log_status": "SUCCESS",
+                        "p_pipeline_name": "@pipeline().Pipeline",
+                        "p_run_id": "@pipeline().RunId",
+                        "p_trigger_name": "@pipeline().TriggerName",
+                        "p_source_table": "@concat(pipeline().parameters.p_schema_name, '.', pipeline().parameters.p_table_name)",
+                        "p_target_path": "@concat(pipeline().parameters.p_container, '/', pipeline().parameters.p_db_name, '/', pipeline().parameters.p_schema_name, '/', pipeline().parameters.p_table_name, '_', pipeline().parameters.p_load_date, '.parquet')",
+                        "p_load_date": "@pipeline().parameters.p_load_date",
+                        "p_rows_read": "@string(activity('Copy_DB2_to_ADLS').output.rowsRead)",
+                        "p_rows_copied": "@string(activity('Copy_DB2_to_ADLS').output.rowsCopied)",
+                        "p_data_read": "@string(activity('Copy_DB2_to_ADLS').output.dataRead)",
+                        "p_data_written": "@string(activity('Copy_DB2_to_ADLS').output.dataWritten)",
+                        "p_duration_sec": "@string(activity('Copy_DB2_to_ADLS').output.copyDuration)"
+                    }
+                }
+            },
+            {
+                "name": "Exec_Log_Failure",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Copy_DB2_to_ADLS",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Log_To_Blob",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "p_log_status": "FAILED",
+                        "p_pipeline_name": "@pipeline().Pipeline",
+                        "p_run_id": "@pipeline().RunId",
+                        "p_trigger_name": "@pipeline().TriggerName",
+                        "p_source_table": "@concat(pipeline().parameters.p_schema_name, '.', pipeline().parameters.p_table_name)",
+                        "p_target_path": "@concat(pipeline().parameters.p_container, '/', pipeline().parameters.p_db_name, '/', pipeline().parameters.p_schema_name, '/', pipeline().parameters.p_table_name, '_', pipeline().parameters.p_load_date, '.parquet')",
+                        "p_load_date": "@pipeline().parameters.p_load_date",
+                        "p_rows_read": {
+                            "value": "0",
+                            "type": "Expression"
+                        },
+                        "p_rows_copied": {
+                            "value": "0",
+                            "type": "Expression"
+                        },
+                        "p_data_read": {
+                            "value": "0",
+                            "type": "Expression"
+                        },
+                        "p_data_written": {
+                            "value": "0",
+                            "type": "Expression"
+                        },
+                        "p_duration_sec": {
+                            "value": "0",
+                            "type": "Expression"
+                        },
+                        "p_error_message": "@replace(activity('Copy_DB2_to_ADLS').error.message, '\"', '\\\\\"')"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "p_table_name": {
+                "type": "string",
+                "defaultValue": "tables"
+            },
+            "p_schema_name": {
+                "type": "string",
+                "defaultValue": "syscat"
+            },
+            "p_container": {
+                "type": "string",
+                "defaultValue": "ingest"
+            },
+            "P_db_name": {
+                "type": "string",
+                "defaultValue": "sample"
+            },
+            "p_load_date": {
+                "type": "string",
+                "defaultValue": "20260402"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-03-16T06:01:23Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

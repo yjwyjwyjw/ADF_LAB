@@ -17,6 +17,7 @@ ADF 입문 ~ 중급 엔지니어를 위한 단계별 실습 문서입니다.
 | [Lab 2 확장](docs/lab2-ext-lookup-foreach.md) | Config Lookup + ForEach | Azure SQL Config 테이블, Lookup, ForEach 병렬 수집 | ⭐⭐⭐ |
 | [Lab 3](docs/lab3-delete-error-handling.md) | 파일 삭제 + 실패 핸들링 | Delete Activity, Get Metadata, Error Handling 패턴 | ⭐⭐ |
 | [Lab 4](docs/lab4-db2-query-expressions.md) | DB2 소스 쿼리 표현식 | WITH UR, 증분 쿼리, ADF 표현식, TIMESTAMP 함수 | ⭐⭐ |
+| [Lab 5](docs/lab5-logging-to-blob.md) | Copy/Pipeline 실행 로깅 | Web Activity + Blob REST API, JSON 로그, 3가지 방법 비교 | ⭐⭐⭐ |
 
 ## 📁 부록
 
@@ -45,15 +46,15 @@ ADF 입문 ~ 중급 엔지니어를 위한 단계별 실습 문서입니다.
 ┌─────────────────────────────────┐          ┌──────────────────────────────────┐
 │  On-Premises                    │          │  Azure Cloud                     │
 │                                 │          │                                  │
-│  ┌───────────┐   ┌──────────┐   │  HTTPS   │  ┌──────────┐   ┌────────────┐   │
-│  │ IBM DB2   │──▶│  SHIR    │──┼──────────┼─▶│   ADF   │──▶│ ADLS Gen2  │  │
-│  │ SAMPLEDB  │   │ (Gateway)│   │   443    │  │ Pipeline │   │ Parquet    │   │
-│  └───────────┘   └──────────┘   │          │  └────┬─────┘   └────────────┘   │
+│  ┌───────────┐   ┌──────────┐  │  HTTPS   │  ┌──────────┐   ┌────────────┐  │
+│  │ IBM DB2   │──▶│  SHIR    │──┼──────────┼─▶│   ADF    │──▶│ ADLS Gen2  │  │
+│  │ SAMPLEDB  │   │ (Gateway)│  │   443    │  │ Pipeline │   │ Parquet    │  │
+│  └───────────┘   └──────────┘  │          │  └────┬─────┘   └────────────┘  │
 │                                 │          │       │                          │
-│                                 │          │  ┌────▼─────┐                    │
-│                                 │          │  │Azure SQL │ Config / Log       │
-│                                 │          │  │ Database │ Tables             │
-│                                 │          │  └──────────┘                    │
+│                                 │          │  ┌────▼─────┐                   │
+│                                 │          │  │Azure SQL │ Config / Log      │
+│                                 │          │  │ Database │ Tables            │
+│                                 │          │  └──────────┘                   │
 └─────────────────────────────────┘          └──────────────────────────────────┘
 ```
 
@@ -63,6 +64,7 @@ ADF 입문 ~ 중급 엔지니어를 위한 단계별 실습 문서입니다.
 부록 A (사전 준비) → Lab 1-A (Full) → Lab 1-B (Incr)
     → Lab 2 (파라메터) → Lab 2 확장 (Lookup/ForEach)
     → Lab 3 (삭제/에러) → Lab 4 (DB2 표현식)
+    → Lab 5 (Blob 로깅)
 ```
 
 ## 🛠️ 사전 요구사항
